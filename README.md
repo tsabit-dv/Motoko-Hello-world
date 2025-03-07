@@ -1,59 +1,115 @@
-# `hello-motoko`
+# HelloMotoko Smart Contract
 
-Welcome to your new `hello-motoko` project and to the Internet Computer development community. By default, creating a new project adds this README and some template files to your project directory. You can edit these template files to customize your project and to include your own code to speed up the development cycle.
+## Overview
+**HelloMotoko** adalah smart contract berbasis **Motoko** yang berjalan di **Internet Computer (ICP)**. Kontrak ini menyediakan dua fungsi utama:
 
-To get started, you might want to explore the project directory structure and the default configuration file. Working with this project in your development environment will not affect any production deployment or identity tokens.
+1. **greet** - Menghasilkan pesan sapaan berbasis nama pengguna.
+2. **sortArray** - Mengurutkan array bilangan bulat menggunakan algoritma **Insertion Sort**.
 
-To learn more before you start working with `hello-motoko`, see the following documentation available online:
+## Features
+- Dibangun dengan **Motoko**, bahasa pemrograman khusus untuk **Internet Computer**.
+- **Asynchronous execution**, memastikan efisiensi dalam pemrosesan data.
+- Menggunakan fungsi **query** untuk memastikan performa optimal dalam operasi yang tidak mengubah state.
 
-- [Quick Start](https://internetcomputer.org/docs/current/developer-docs/setup/deploy-locally)
-- [SDK Developer Tools](https://internetcomputer.org/docs/current/developer-docs/setup/install)
-- [Motoko Programming Language Guide](https://internetcomputer.org/docs/current/motoko/main/motoko)
-- [Motoko Language Quick Reference](https://internetcomputer.org/docs/current/motoko/main/language-manual)
+## What is a Canister?
+Dalam ekosistem **Internet Computer**, **Canister** adalah bentuk khusus dari smart contract yang mencakup kode dan state yang dapat dieksekusi dalam lingkungan **Internet Computer Protocol (ICP)**. Canister memungkinkan pengembang untuk membuat aplikasi yang skalabel, dapat diperbarui, dan berjalan secara terdesentralisasi. 
 
-If you want to start working on your project right away, you might want to try the following commands:
+Setiap canister memiliki:
+- **Kode aplikasi** yang ditulis dalam Motoko atau Rust.
+- **Memori yang dikelola secara otomatis**, mendukung stateful computing.
+- **Interaksi asynchronous** yang memungkinkan komunikasi efisien antar canister.
 
-```bash
-cd hello-motoko/
-dfx help
-dfx canister --help
+## Perbedaan Canister dan Smart Contract
+Meskipun **Canister** sering dianggap sebagai smart contract di **Internet Computer**, ada beberapa perbedaan utama antara canister dan smart contract tradisional:
+
+| Aspek           | Smart Contract Tradisional | Canister (ICP) |
+|----------------|--------------------------|---------------|
+| **Eksekusi**   | Sinkron, terbatas         | Asinkron, skalabel |
+| **Penyimpanan** | Terbatas (biasanya hanya kode) | Termasuk state & kode |
+| **Komunikasi** | Transaksi blockchain biasa | Dapat berkomunikasi dengan canister lain |
+| **Upgrade**    | Sulit atau tidak mungkin  | Dapat diperbarui tanpa kehilangan state |
+| **Performa**   | Terbatas oleh blockchain  | Lebih cepat dengan model berbasis wasmtime |
+
+Dengan fitur-fitur tersebut, **Canister** memberikan fleksibilitas lebih besar dibandingkan smart contract tradisional, memungkinkan pembuatan aplikasi yang lebih kompleks dan efisien.
+
+## Installation & Deployment
+### Prerequisites
+Sebelum menjalankan atau mendeploy smart contract ini, pastikan Anda telah menginstal:
+- **DFX SDK** (Dfinity Execution Environment)
+- **Motoko Compiler**
+
+### Steps
+1. **Clone repository** (jika menggunakan GitHub):
+   ```sh
+   git clone <repository-url>
+   cd HelloMotoko
+   ```
+
+2. **Jalankan lokal dengan DFX**:
+   ```sh
+   dfx start --background
+   ```
+
+3. **Deploy smart contract**:
+   ```sh
+   dfx deploy
+   ```
+
+## Smart Contract Code
+Berikut adalah kode utama dalam **Motoko**:
+```motoko
+import Array "mo:base/Array";
+import Nat "mo:base/Nat";     
+
+actor HelloMotoko {
+    public query func greet(name : Text) : async Text {
+        return "Hello, " # name # "!";
+    };
+
+    public query func sortArray(arr: [Int]) : async [Int] {
+        let n : Nat = arr.size();
+        var sortedArr : [var Int] = Array.thaw<Int>(arr);
+
+        for (i in Array.tabulate<Nat>(n - 1, func(x : Nat) : Nat { x + 1 }).vals()) {  
+            let key : Int = sortedArr[i];
+            var j : Nat = i;  
+            
+            while (j > 0 and sortedArr[j - 1] > key) {
+                sortedArr[j] := sortedArr[j - 1];
+                j -= 1;
+            };
+            sortedArr[j] := key;
+        };
+
+        return Array.freeze(sortedArr); 
+    };
+};
 ```
 
-## Running the project locally
-
-If you want to test your project locally, you can use the following commands:
-
-```bash
-# Starts the replica, running in the background
-dfx start --background
-
-# Deploys your canisters to the replica and generates your candid interface
-dfx deploy
+## Usage
+### 1. Memanggil Fungsi **greet**
+Gunakan perintah berikut untuk mendapatkan sapaan:
+```sh
+dfx canister call HelloMotoko greet '("Alice")'
+```
+#### **Output:**
+```sh
+("Hello, Alice!")
 ```
 
-Once the job completes, your application will be available at `http://localhost:4943?canisterId={asset_canister_id}`.
-
-If you have made changes to your backend canister, you can generate a new candid interface with
-
-```bash
-npm run generate
+### 2. Memanggil Fungsi **sortArray**
+Gunakan perintah berikut untuk mengurutkan array:
+```sh
+dfx canister call HelloMotoko sortArray '(vec {5; 2; 9; 1; 5; 6})'
+```
+#### **Output:**
+```sh
+(vec {1; 2; 5; 5; 6; 9})
 ```
 
-at any time. This is recommended before starting the frontend development server, and will be run automatically any time you run `dfx deploy`.
+## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-If you are making frontend changes, you can start a development server with
+---
+**Developed with ❤️ using Motoko & Internet Computer.**
 
-```bash
-npm start
-```
-
-Which will start a server at `http://localhost:8080`, proxying API requests to the replica at port 4943.
-
-### Note on frontend environment variables
-
-If you are hosting frontend code somewhere without using DFX, you may need to make one of the following adjustments to ensure your project does not fetch the root key in production:
-
-- set`DFX_NETWORK` to `ic` if you are using Webpack
-- use your own preferred method to replace `process.env.DFX_NETWORK` in the autogenerated declarations
-  - Setting `canisters -> {asset_canister_id} -> declarations -> env_override to a string` in `dfx.json` will replace `process.env.DFX_NETWORK` with the string in the autogenerated declarations
-- Write your own `createActor` constructor
